@@ -10,6 +10,7 @@
 #import "CatchExceptionTextView.h"
 #import "Masonry.h"
 #import <MessageUI/MessageUI.h>
+#import "QuickAlertView.h"
 
 @interface CatchExceptionDispose () <MFMailComposeViewControllerDelegate>
 @property (nonatomic, strong) UIViewController *topViewController;
@@ -30,7 +31,7 @@ static NSInteger dismissed = 0;
 - (NSInteger *)showExceptionStr:(NSString *)exceptionStr exception:(NSException *)exception {
     UIViewController *currentVC = [CatchExceptionDispose currentTopViewController];
     self.topViewController = currentVC;
-    if (DEBUG)
+    if (!DEBUG)
     {
  
         CatchExceptionTextView *textView = [[CatchExceptionTextView alloc] initWithFrame:CGRectZero textContainer:nil];
@@ -48,20 +49,36 @@ static NSInteger dismissed = 0;
     }
     else
     {
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"抱歉，由于程序猿发呆导致程序崩溃"
-                                                                      message:@"您可以发送邮件给引起此问题的序猿狠狠怼他"
-                                                               preferredStyle:UIAlertControllerStyleAlert];
-        UIAlertAction *comfirm = [UIAlertAction actionWithTitle:@"我要狠狠怼他!" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            MFMailComposeViewController *vc = [self senderEmail:exceptionStr exception:exception];
-            [currentVC presentViewController:vc animated:YES completion:nil];
-        }];
-        
-        UIAlertAction *cancel = [UIAlertAction actionWithTitle:@"原谅他了,不发了" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
-            dismissed = 1;
-        }];
-        [alert addAction:cancel];
-        [alert addAction:comfirm];
-        [currentVC presentViewController:alert animated:YES completion:nil];
+        [QuickAlertView presentAlertViewWithTitle:@"抱歉，由于程序猿发呆导致程序崩溃"
+                                           message:@"您可以发送邮件给引起此问题的序猿狠狠怼他"
+                                          showType:UIAlertControllerStyleAlert
+                                            cancel:@"原谅他了,不发了"
+                                           comform:@"我要狠狠怼他!"
+                                           present:currentVC
+                                      comformBlock:^(UIAlertAction * _Nullable action) {
+                                          if ([MFMailComposeViewController canSendMail])
+                                          {
+                                              MFMailComposeViewController *vc = [self senderEmail:exceptionStr exception:exception];
+                                              [currentVC presentViewController:vc animated:YES completion:nil];
+                                          }
+                                          else
+                                          {
+                                              UIPasteboard *paste = [UIPasteboard generalPasteboard];
+                                              paste.string = exceptionStr;
+                                              [QuickAlertView presentAlertViewWithTitle:@"检测到您的手机未配置邮箱，所以不能发送邮件"
+                                                                                 message:@"日志已经拷贝到剪切板，你可以通过其他方式将崩溃信息反馈到我司"
+                                                                                showType:UIAlertControllerStyleAlert
+                                                                                  cancel:nil
+                                                                                 comform:@"点击就闪退啦！"
+                                                                                 present:currentVC
+                                                                            comformBlock:^(UIAlertAction * _Nullable action) {
+                                                                                dismissed = 1;
+                                                                            } cacelBlock:nil
+                                                                               showBlock:nil];
+                                          }
+                                      } cacelBlock:^(UIAlertAction * _Nullable action) {
+                                          dismissed = 1;
+                                      } showBlock:nil];
         
         return &dismissed;
     }
@@ -105,13 +122,16 @@ static NSInteger dismissed = 0;
             break;
     }
     [controller dismissViewControllerAnimated:YES completion:^{
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:resultStr
-                                                                       message:nil
-                                                                preferredStyle:UIAlertControllerStyleAlert];
-        UIAlertAction *comfirm = [UIAlertAction actionWithTitle:@"点击就闪退啦！" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            dismissed = 1;
-        }];
-        [self.topViewController presentViewController:alert animated:YES completion:nil];
+        [QuickAlertView presentAlertViewWithTitle:resultStr
+                                           message:nil
+                                          showType:UIAlertControllerStyleAlert
+                                            cancel:nil
+                                           comform:@"点击就闪退啦！"
+                                           present:self.topViewController
+                                      comformBlock:^(UIAlertAction * _Nullable action) {
+                                          dismissed = 1;
+                                      } cacelBlock:nil
+                                         showBlock:nil];
     }];
     
 }
