@@ -31,7 +31,7 @@ static NSInteger dismissed = 0;
 - (NSInteger *)showExceptionStr:(NSString *)exceptionStr exception:(NSException *)exception {
     UIViewController *currentVC = [CatchExceptionDispose currentTopViewController];
     self.topViewController = currentVC;
-    if (!DEBUG)
+    if (DEBUG)
     {
  
         CatchExceptionTextView *textView = [[CatchExceptionTextView alloc] initWithFrame:CGRectZero textContainer:nil];
